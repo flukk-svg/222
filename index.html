@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบลงทะเบียนอุปกรณ์</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold text-center mb-6 text-blue-600">📋 ลงทะเบียนอุปกรณ์</h2>
+    
+    <form id="equipment-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">ชื่ออุปกรณ์</label>
+        <input type="text" id="equipment-name" required class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">ประเภท</label>
+        <input type="text" id="equipment-type" required class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">ผู้ใช้งาน</label>
+        <input type="text" id="user-name" required class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">แผนก</label>
+        <input type="text" id="department" required class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">หมายเลขเครื่อง (Serial)</label>
+        <input type="text" id="serial-number" required class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">แนบรูปภาพ</label>
+        <input type="file" id="equipment-image" accept="image/*" capture="environment" class="mt-1 w-full" />
+        <div id="image-preview" class="hidden mt-2">
+          <img id="preview-img" class="w-full rounded-lg shadow" alt="Preview" />
+        </div>
+      </div>
+
+      <button type="submit" id="submit-btn" class="w-full flex justify-center items-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+        <span id="submit-text">บันทึกข้อมูล</span>
+        <svg id="submit-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3.5-3.5L12 0v4a8 8 0 010 16v-4l-3.5 3.5L12 24v-4a8 8 0 01-8-8z"></path>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyOPz-FxigPP0FLBl0SlBCuYeTAKDxs9TenRZcLEWA-YKlyVmUhSZ5tZ1LnyrET5ZW_lQ/exec"; // 👈 ใส่ URL ของ Web App จาก GAS ตรงนี้
+
+    document.getElementById("equipment-image").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          document.getElementById("preview-img").src = event.target.result;
+          document.getElementById("image-preview").classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById("equipment-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById("submit-btn");
+      const submitText = document.getElementById("submit-text");
+      const submitSpinner = document.getElementById("submit-spinner");
+
+      submitBtn.disabled = true;
+      submitText.textContent = "กำลังบันทึก...";
+      submitSpinner.classList.remove("hidden");
+
+      const data = {
+        name: document.getElementById("equipment-name").value,
+        type: document.getElementById("equipment-type").value,
+        user: document.getElementById("user-name").value,
+        department: document.getElementById("department").value,
+        serial: document.getElementById("serial-number").value,
+        imageBase64: document.getElementById("preview-img").src || "",
+        date: new Date().toLocaleString("th-TH")
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          mode: "cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert("✅ บันทึกข้อมูลสำเร็จ!");
+          e.target.reset();
+          document.getElementById("image-preview").classList.add("hidden");
+        } else {
+          alert("⚠️ เกิดข้อผิดพลาด: " + result.message);
+        }
+      } catch (error) {
+        alert("❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+        console.error(error);
+      } finally {
+        submitBtn.disabled = false;
+        submitText.textContent = "บันทึกข้อมูล";
+        submitSpinner.classList.add("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
